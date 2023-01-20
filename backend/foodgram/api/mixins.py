@@ -18,8 +18,8 @@ class ListPostDel(mixins.CreateModelMixin,
 
 
 class ListPostDelPatch(mixins.CreateModelMixin,
-                  mixins.ListModelMixin,
-                  mixins.DestroyModelMixin,
-                  mixins.UpdateModelMixin):
+                       mixins.ListModelMixin,
+                       mixins.DestroyModelMixin,
+                       mixins.UpdateModelMixin):
     """Mixin для наследования."""
     pass

@@ -1,55 +1,131 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import (AbstractBaseUser, BaseUserManager,
+                                        PermissionsMixin)
 from django.db import models
 
-from foodgram.settings import ROLES_CHOICES
+
+class UserManager(BaseUserManager):
+    """ Manager для создания User. """
+
+    def create_user(self, username, email, password=None, **extra_fields):
+        """ Создает и возвращает пользователя с имэйлом, паролем и именем. """
+        if username is None:
+            raise TypeError('Пользователи должны иметь имя пользователя.')
+
+        if email is None:
+            raise TypeError('пользователи должны иметь email.')
+        user = self.model(
+            username=username,
+            email=self.normalize_email(email),
+            **extra_fields
+        )
+        user.set_password(password)
+        user.save()
+
+        return user
+
+    def create_superuser(self, username, email, password):
+        """ Создаёт суперпользователя. """
+        if password is None:
+            raise TypeError('У Суперпользователя должен быть пароль.')
+
+        user = self.create_user(username, email, password)
+        user.is_superuser = True
+        user.is_staff = True
+        user.save()
+
+        return user
 
 
-class CustomUser(AbstractUser):
+class User(AbstractBaseUser, PermissionsMixin):
+    """ Модель пользователя"""
 
-    username = models.CharField(max_length=150, unique=True)
+    username = models.CharField(
+        db_index=True,
+        max_length=150,
+        unique=True,
+        verbose_name='Има пользователя ',
+        help_text='Логин пользователя'
+    )
+    email = models.EmailField(
+        db_index=True,
+        max_length=254,
+        unique=True,
+        verbose_name='Email',
+        help_text='email пользователя'
+    )
+    first_name = models.CharField(
+        max_length=150,
+        blank=False,
+        default=' ',
+        verbose_name='Имя',
+        help_text='Имя пользователя'
+    )
+    last_name = models.CharField(
+        max_length=150,
+        blank=False,
+        default=' ',
+        verbose_name='Фамилия',
+        help_text='Фамилия пользователя'
+    )
+    is_active = models.BooleanField(default=True)
 
-    first_name = models.CharField(max_length=150)
+    is_staff = models.BooleanField(default=False)
 
-    last_name = models.CharField(max_length=150)
+    is_subscribed = models.BooleanField(default=False)
 
-    email = models.EmailField(max_length=254)
-
-    password = models.CharField(max_length=150)
-
-    role = models.CharField(
-        max_length=32,
-        choices=ROLES_CHOICES,
-        default='user',
-        verbose_name='роль пользователя'
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата создания'
     )
 
+    updated_at = models.DateTimeField(auto_now=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
+    objects = UserManager()
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['username', 'email'],
+                name='unique_username_email'
+            )
+        ]
+
     def __str__(self):
-        return str(self.username)
+        return self.username
 
 
 class Follow(models.Model):
-    user = models.ForeignKey(
-        CustomUser,
-        on_delete=models.CASCADE,
-        related_name='follower'
-    )
+    """ Модель подписки на авторов"""
 
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='follower',
+        verbose_name="Подписчик",
+        help_text='тот кто подписывается ',
+    )
     author = models.ForeignKey(
-        CustomUser,
+        User,
         on_delete=models.CASCADE,
         related_name='following',
+        verbose_name="Автор рецепта",
+        help_text='тот на кого подписываются',
     )
 
     class Meta:
+        verbose_name = 'Подписчик'
+        verbose_name_plural = 'Подписчики'
         constraints = [
             models.UniqueConstraint(
-                fields=['user', 'author'],
-                name='unique_follow'
+                fields=['author', 'user'],
+                name='unique_author_user'
             )
         ]
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
-        ordering = ['-id']
 
     def __str__(self):
-        return f'{self.user}{self.author}'
+        return "Подписка на автора"

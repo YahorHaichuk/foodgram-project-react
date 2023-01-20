@@ -1,91 +1,157 @@
-from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
-from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
-from rest_framework_simplejwt.tokens import AccessToken
-
-
+from api.serializers import ShopingCardSerializer
+from django.contrib.auth.hashers import make_password
 from recipes.models import Recipe
-from users.models import CustomUser, Follow
+from rest_framework import serializers
+from users.models import Follow, User
 
 
-class SignUpSerializer(serializers.ModelSerializer):
-    username = serializers.SlugField(
-        max_length=150,
-        allow_blank=False
-    )
-    email = serializers.EmailField()
-
-    class Meta:
-        model = CustomUser
-        fields = (
-            'username',
-            'email'
-        )
-
-
-class CustomUserCreateSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     """ Сериализаторор для модели User."""
-
-    class Meta:
-        model = CustomUser
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'password'
-        )
-
-        validators = [
-            UniqueTogetherValidator(
-                queryset=CustomUser.objects.all(),
-                fields=('username', 'email'),
-                message='Имя пользователя или email уже используются'
-            )
-        ]
+    password = serializers.CharField(
+        max_length=128,
+        min_length=8,
+        write_only=True
+    )
 
     def create(self, validated_data):
-        return CustomUser.objects.create(**validated_data)
-
-
-class UserMeSerializer(serializers.ModelSerializer):
+        password = validated_data['password']
+        validated_data['password'] = make_password(password)
+        return super().create(validated_data)
 
     class Meta:
-        model = CustomUser
-        fields = (
+        model = User
+        fields = [
             'email',
             'id',
             'username',
             'first_name',
             'last_name',
-        )
+            'password',
+        ]
 
 
-class GetTokenSerializer(serializers.Serializer):
-    username_field = get_user_model().USERNAME_FIELD
-    token_class = AccessToken
+class RegistrationSerializer(serializers.ModelSerializer):
+    """ Сериализация регистрации пользователя. """
+
+    password = serializers.CharField(
+        max_length=128,
+        min_length=8,
+        write_only=True
+    )
+    token = serializers.CharField(max_length=255, read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'password',
+            'token',
+            'is_subscribed'
+        ]
+
+    def validate(self, data):
+        if User.objects.filter(username=data['username']).exists():
+            raise serializers.ValidationError(
+                'email не соответствует User'
+            )
+        return data
+
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
 
 
-class CustomUserSerializer(serializers.ModelSerializer):
-    """ Сериализаторор для модели User."""
+class SetPasswordSerializer(serializers.ModelSerializer):
+    """ Сериализатор эндпойнта SetPassword. """
+    new_password = serializers.CharField(
+        required=True,
+        max_length=50,
+        min_length=8,
+        write_only=True
+    )
+    current_password = serializers.CharField(
+        required=True,
+        max_length=50,
+        min_length=4,
+        write_only=True
+    )
+
+    class Meta:
+        model = User
+        fields = ['new_password', 'current_password']
+
+    def validate(self, attrs):
+        if attrs['new_password'] == attrs['current_password']:
+            raise serializers.ValidationError(
+                'новый и старый пароли совпадают'
+            )
+        return super().validate(attrs)
+
+
+class UserSubscribtionsSerializer(serializers.ModelSerializer):
+    """ Сериализатор эндпойнта UserSubscribtions. """
+
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
     is_subscribed = serializers.SerializerMethodField()
 
-    def get_is_subscribed(self, author):
-        user = self.context.get('request', None).user
-        if user.is_authenticated:
-            return Follow.objects.filter(user=user, author=author).exists()
-        return False
-
     class Meta:
-        model = CustomUser
-        fields = (
+        model = User
+        fields = [
             'email',
             'id',
             'username',
             'first_name',
             'last_name',
-            'is_subscribed'
-        )
+            'is_subscribed',
+            'recipes',
+            'recipes_count'
+        ]
 
+    def get_recipes(self, obj):
+        recipes = Recipe.objects.filter(author_id=obj.id)
+        serializer = ShopingCardSerializer(recipes, many=True)
+        return serializer.data
+
+    def get_recipes_count(self, obj):
+        recipes = Recipe.objects.filter(author_id=obj.id)
+        return recipes.count()
+
+    def get_is_subscribed(self, obj):
+        return Follow.objects.filter(
+            user=self.context.get('user'),
+            author=obj
+        ).exists()
+
+    def update(self, instance, validated_data):
+        author = User.objects.get(username=self.context.get('author'))
+        instance.email = author.email
+        return instance
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    """ Сериализатор модели Follow. """
+
+    result = UserSubscribtionsSerializer()
+
+    class Meta:
+        model = Follow
+        fields = '__all__'
+
+
+class UsersSerializer(serializers.ModelSerializer):
+    """ Сериализатор модели Users List и Create. """
+
+    class Meta:
+        model = User
+        fields = [
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+        ]
