@@ -1,9 +1,11 @@
 from django.contrib.auth.hashers import make_password
 from django.core.validators import MinValueValidator
+from django.db.migrations import serializer
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (Favorite, IngredientAmount, Ingredients, Recipe,
                             Tags, TagsRecipe, UserShopCart)
 from rest_framework import serializers
+from rest_framework.generics import get_object_or_404
 from users.models import User
 
 from foodgram.settings import CHOICES
@@ -87,7 +89,7 @@ class RecipeSerialzer(serializers.ModelSerializer):
 
     tags = TagsSerializer(many=True)
     author = UserSerializer(read_only=True)
-    ingredients = serializers.SerializerMethodField()
+    ingredients = IngredientsSerializer(many=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -105,10 +107,6 @@ class RecipeSerialzer(serializers.ModelSerializer):
             'text',
             'cooking_time'
         ]
-
-    def get_ingredients(self, obj):
-        ingredients = IngredientAmount.objects.filter(recipe=obj)
-        return IngredientAmountSerializer(ingredients, many=True).data
 
     def get_is_favorited(self, obj):
         request = self.context.get('request')
@@ -165,7 +163,17 @@ class CreateRecipeSerialzer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        ingredients = self.initial_data.get('ingredients')
+        ingredients = self.data.get('ingredients')
+        ingredient_list = []
+
+        for ingredient in ingredients:
+            ingredient = get_object_or_404(
+                Ingredients, id=ingredient['id'])
+            if ingredient in ingredient_list:
+                raise serializers.ValidationError(
+                    'Ингредиент не может повторятся')
+            ingredient_list.append(ingredient)
+
         for ingredient in ingredients:
             amount = ingredient['amount']
             if int(amount) < 1:
@@ -179,7 +187,8 @@ class CreateRecipeSerialzer(serializers.ModelSerializer):
         bulk_ingredient_list = [
             IngredientAmount(
                 recipe=recipe,
-                ingredient=Ingredients.objects.get(pk=ingredient_data['id']),
+                ingredient=get_object_or_404(
+                    Ingredients, pk=ingredient_data['id']),
                 amount=ingredient_data['amount']
             )
             for ingredient_data in ingredients
@@ -188,7 +197,9 @@ class CreateRecipeSerialzer(serializers.ModelSerializer):
 
     def create_tags(self, tags, recipe):
         bulk_tags_list = [
-            TagsRecipe(recipe=recipe, tags=Tags.objects.get(name=tag_data))
+            TagsRecipe(recipe=recipe,
+                       tags=get_object_or_404(Tags, name=tag_data)
+                       )
             for tag_data in tags
         ]
         TagsRecipe.objects.bulk_create(bulk_tags_list)

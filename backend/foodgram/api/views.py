@@ -1,3 +1,5 @@
+from urllib import request
+
 from api import serializers
 from api.filters import Filter, NameSearchFilter
 from api.permissions import IsAuthorOrReadOnly
@@ -47,38 +49,16 @@ class RecipeVievSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
+            serializer = RecipeSerialzer
+            #serializer.is_valid(raise_exception=True)
             return RecipeSerialzer
+        #serializer = CreateRecipeSerialzer
+        #serializer.is_valid(raise_exception=True)
         return CreateRecipeSerialzer
 
-    def create(self, request, *args, **kwargs):
-        data = request.data
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        recipe = get_object_or_404(Recipe, pk=serializer.data.get('id'))
-        new_serializer = CreateRecipeSerialzer(
-            recipe,
-            context={'request': request}
-        )
-        return Response(new_serializer.data, status=status.HTTP_201_CREATED)
 
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(
-            instance,
-            data=request.data,
-            partial=partial
-        )
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        recipe = get_object_or_404(Recipe, pk=serializer.data.get('id'))
-        new_serializer = serializers.RecipeSerialzer(
-            recipe,
-            context={'request': request},
-            partial=partial
-        )
-        return Response(new_serializer.data, status=status.HTTP_200_OK)
+    # serializer = self.get_serializer_class(data=data)
+    # serializer.is_valid(raise_exception=True)
 
     def perform_update(self, serializer):
         serializer.save(author=self.request.user)
@@ -95,7 +75,7 @@ class RecipeVievSet(viewsets.ModelViewSet):
         ).values(
             'ingredient__name',
             'ingredient__measurement_unit'
-        ).annotate(amount=Sum('amount'))
+        ).annotate(amount_sum=Sum('amount'))
 
         file_data = make_send_file(ingredient)
         return HttpResponse(
@@ -104,34 +84,26 @@ class RecipeVievSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
-    @action(
-        detail=True,
-        methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated],
-        name='shopping_cart'
-    )
-    def shopping_cart(self, request, pk=None):
-        """ Обработка запросов на добавление в корзину """
-
+    def add_recipe(self, request, pk, model):
+        """Вспомогательная функция для добавления рецепта в
+        shopping_cart или favorite."""
         user = request.user
         recipe = get_object_or_404(Recipe, pk=pk)
-        in_shop_cart = UserShopCart.objects.filter(
+        object = model.objects.filter(
             user=user,
             recipe=recipe
         )
-        if request.method == "POST":
-            UserShopCart.objects.get_or_create(
+        if request.method == 'POST':
+            model.objects.get_or_create(
                 user=user,
                 recipe=recipe
             )
             serializer = ShopingCardSerializer(recipe)
-            return Response(
-                serializer.data,
-                status=status.HTTP_201_CREATED
-            )
+            serializer.validate(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
-            in_shop_cart.delete()
+            object.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         return Response(
@@ -143,31 +115,20 @@ class RecipeVievSet(viewsets.ModelViewSet):
         detail=True,
         methods=['post', 'delete'],
         permission_classes=[IsAuthenticated],
+        name='shopping_cart'
+    )
+    def shopping_cart(self, request, pk=None):
+        """ Обработка запросов на добавление в корзину """
+
+        return self.add_recipe(request, pk, UserShopCart)
+
+    @action(
+        detail=True,
+        methods=['post', 'delete'],
+        permission_classes=[IsAuthenticated],
         name='favorite'
     )
     def favorite(self, request, pk=None):
         """ Представление запросов по url .../favorite/"""
-        user = request.user
-        recipe = get_object_or_404(Recipe, pk=pk)
-        favorite = Favorite.objects.filter(
-            user=user,
-            recipe=recipe
-        )
 
-        if request.method == "POST":
-            Favorite.objects.get_or_create(
-                user=user,
-                recipe=recipe
-            )
-            serializer = ShopingCardSerializer(recipe)
-            return Response(
-                serializer.data,
-                status=status.HTTP_201_CREATED
-            )
-        if request.method == 'DELETE':
-            favorite.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST)
+        return self.add_recipe(request, pk, Favorite)
