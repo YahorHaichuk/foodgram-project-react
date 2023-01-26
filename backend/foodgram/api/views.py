@@ -75,7 +75,7 @@ class RecipeVievSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
-    def add_recipe(self, request, pk, model):
+    def add_recipe_to_fav_or_shopcart(self, request, pk, model):
         """Вспомогательная функция для добавления рецепта в
         shopping_cart или favorite."""
         user = request.user
@@ -111,7 +111,7 @@ class RecipeVievSet(viewsets.ModelViewSet):
     def shopping_cart(self, request, pk=None):
         """ Обработка запросов на добавление в корзину """
 
-        return self.add_recipe(request, pk, UserShopCart)
+        return self.add_recipe_to_fav_or_shopcart(request, pk, UserShopCart)
 
     @action(
         detail=True,
@@ -122,4 +122,4 @@ class RecipeVievSet(viewsets.ModelViewSet):
     def favorite(self, request, pk=None):
         """ Представление запросов по url .../favorite/"""
 
-        return self.add_recipe(request, pk, Favorite)
+        return self.add_recipe_to_fav_or_shopcart(request, pk, Favorite)
