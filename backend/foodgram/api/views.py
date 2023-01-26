@@ -50,7 +50,6 @@ class RecipeVievSet(viewsets.ModelViewSet):
             return RecipeSerialzer
         return CreateRecipeSerialzer
 
-
     def perform_update(self, serializer):
         serializer.save(author=self.request.user)
 
@@ -61,6 +60,7 @@ class RecipeVievSet(viewsets.ModelViewSet):
         name='download_shopping_cart')
     def download_shopping_cart(self, request):
         """ Скачать файл со списком ингредиентов """
+
         ingredient = IngredientAmount.objects.filter(
             recipe__usershopcart__user=request.user
         ).values(
@@ -68,12 +68,12 @@ class RecipeVievSet(viewsets.ModelViewSet):
             'ingredient__measurement_unit'
         ).annotate(amount_sum=Sum('amount'))
 
-        file_data = make_send_file(ingredient)
-        return HttpResponse(
-            file_data,
-            content_type='text/plain',
-            status=status.HTTP_200_OK
-        )
+        response = HttpResponse(make_send_file(ingredient).getvalue(),
+                                content_type='text/plain')
+        response['Content-Disposition'] = (f'attachment;'
+                                           f'filename=shop_list_file')
+
+        return response
 
     def add_recipe_to_fav_or_shopcart(self, request, pk, model):
         """Вспомогательная функция для добавления рецепта в
