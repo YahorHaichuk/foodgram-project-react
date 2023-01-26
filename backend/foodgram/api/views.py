@@ -1,23 +1,21 @@
-from urllib import request
-
-from api import serializers
-from api.filters import Filter, NameSearchFilter
-from api.permissions import IsAuthorOrReadOnly
-from api.serializers import (CreateRecipeSerialzer, IngredientsSerializer,
-                             RecipeSerialzer, ShopingCardSerializer,
-                             TagsSerializer)
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from recipes.models import (Favorite, IngredientAmount, Ingredients, Recipe,
-                            Tags, UserShopCart)
-from recipes.utilits import make_send_file
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import mixins
+
+from api.filters import Filter, NameSearchFilter
+from api.permissions import IsAuthorOrReadOnly
+from api.serializers import (CreateRecipeSerialzer, IngredientsSerializer,
+                             RecipeSerialzer, ShopingCardSerializer,
+                             TagsSerializer)
+from recipes.models import (Favorite, IngredientAmount, Ingredients, Recipe,
+                            Tags, UserShopCart)
+from recipes.utilits import make_send_file
 
 
 class TagsViewSet(
@@ -49,16 +47,9 @@ class RecipeVievSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
-            serializer = RecipeSerialzer
-            #serializer.is_valid(raise_exception=True)
             return RecipeSerialzer
-        #serializer = CreateRecipeSerialzer
-        #serializer.is_valid(raise_exception=True)
         return CreateRecipeSerialzer
 
-
-    # serializer = self.get_serializer_class(data=data)
-    # serializer.is_valid(raise_exception=True)
 
     def perform_update(self, serializer):
         serializer.save(author=self.request.user)

@@ -1,11 +1,12 @@
-from api.permissions import IsOwnerOnly
 from django.contrib.auth.hashers import make_password
-from recipes.models import Recipe
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from api.permissions import IsOwnerOnly
+from recipes.models import Recipe
 from users.models import Follow, User
 from users.serializers import (SetPasswordSerializer, UserSerializer,
                                UsersSerializer, UserSubscribtionsSerializer)

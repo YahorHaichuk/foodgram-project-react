@@ -1,7 +1,8 @@
-from api.serializers import ShopingCardSerializer
 from django.contrib.auth.hashers import make_password
-from recipes.models import Recipe
 from rest_framework import serializers
+
+from api.serializers import ShopingCardSerializer
+from recipes.models import Recipe
 from users.models import Follow, User
 
 

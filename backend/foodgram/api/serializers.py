@@ -1,14 +1,13 @@
 from django.contrib.auth.hashers import make_password
 from django.core.validators import MinValueValidator
-from django.db.migrations import serializer
 from drf_extra_fields.fields import Base64ImageField
-from recipes.models import (Favorite, IngredientAmount, Ingredients, Recipe,
-                            Tags, TagsRecipe, UserShopCart)
 from rest_framework import serializers
 from rest_framework.generics import get_object_or_404
-from users.models import User
 
 from foodgram.settings import CHOICES
+from recipes.models import (Favorite, IngredientAmount, Ingredients, Recipe,
+                            Tags, TagsRecipe, UserShopCart)
+from users.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -163,7 +162,7 @@ class CreateRecipeSerialzer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        ingredients = self.data.get('ingredients')
+        ingredients = data['ingredients']
         ingredient_list = []
 
         for ingredient in ingredients:
