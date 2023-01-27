@@ -11,8 +11,7 @@ services:
       - ./.env
 
   web:
-    build:
-      context: ../backend
+    image: barmenoid/foodgram:latest
     #restart: always
     volumes:
       - static_value:/app/foodgram/static/
