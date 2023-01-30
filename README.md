@@ -5,5 +5,11 @@ http://158.160.22.2/recipes
 
 
 админка
+
 email: admin@gmail.com
+password adminadmin123
+
+user
+
+test_user1@gmail.com
 password adminadmin123
