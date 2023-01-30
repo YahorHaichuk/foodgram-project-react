@@ -1,6 +1,5 @@
 from django.contrib.auth.hashers import make_password
 from django.core.validators import MinValueValidator
-from django.db import transaction
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.generics import get_object_or_404
