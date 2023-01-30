@@ -1,5 +1,6 @@
 from django.contrib.auth.hashers import make_password
 from django.core.validators import MinValueValidator
+from django.db import transaction
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.generics import get_object_or_404
@@ -88,7 +89,7 @@ class RecipeSerialzer(serializers.ModelSerializer):
 
     tags = TagsSerializer(many=True)
     author = UserSerializer(read_only=True)
-    ingredients = IngredientsSerializer(many=True)
+    ingredients = serializers.SerializerMethodField()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -106,6 +107,10 @@ class RecipeSerialzer(serializers.ModelSerializer):
             'text',
             'cooking_time'
         ]
+
+    def get_ingredients(self, obj):
+        ingredients = IngredientAmount.objects.filter(recipe=obj)
+        return IngredientAmountSerializer(ingredients, many=True).data
 
     def get_is_favorited(self, obj):
         request = self.context.get('request')
@@ -131,7 +136,6 @@ class AmountSerializer(serializers.ModelSerializer):
     class Meta:
         model = IngredientAmount
         fields = ('id', 'amount',)
-
 
 class CreateRecipeSerialzer(serializers.ModelSerializer):
 
