@@ -8,11 +8,22 @@ from users.models import Follow, User
 
 class UserSerializer(serializers.ModelSerializer):
     """ Сериализаторор для модели User."""
+
+    is_subscribed = serializers.SerializerMethodField()
     password = serializers.CharField(
         max_length=128,
         min_length=8,
         write_only=True
     )
+
+    def get_is_subscribed(self, obj):
+        if not self.context.get('request') or (
+                self.context.get('request') is None):
+            return False
+        request = self.context.get('request')
+        user = request.user
+        subcribe = user.follower.filter(author=obj)
+        return subcribe.exists()
 
     def create(self, validated_data):
         password = validated_data['password']
@@ -28,6 +39,7 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'password',
+            'is_subscribed'
         ]
 
 
@@ -55,6 +67,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
+        if data['username'].lower() == 'me':
+            raise serializers.ValidationError(
+                'Имя пользователя не может быть me'
+            )
         if User.objects.filter(username=data['username']).exists():
             raise serializers.ValidationError(
                 'email не соответствует User'
@@ -146,6 +162,8 @@ class FollowSerializer(serializers.ModelSerializer):
 class UsersSerializer(serializers.ModelSerializer):
     """ Сериализатор модели Users List и Create. """
 
+    is_subscribed = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
@@ -156,3 +174,13 @@ class UsersSerializer(serializers.ModelSerializer):
             'last_name',
             'is_subscribed',
         ]
+
+    def get_is_subscribed(self, obj):
+
+        if not self.context.get('request') or (
+                self.context.get('request') is None):
+            return False
+        request = self.context.get('request')
+        user = request.user
+        subcribe = user.follower.filter(author=obj)
+        return subcribe.exists()
