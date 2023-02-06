@@ -117,6 +117,7 @@ TAG_CHOICES = [
 
 AUTH_USER_MODEL = 'users.User'
 PAG = 'rest_framework.pagination.PageNumberPagination'
+PAGE_SIZE = 6
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
@@ -126,7 +127,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': PAG,
-    'PAGE_SIZE': 6,
+    'PAGE_SIZE': PAGE_SIZE,
 }
 
 DJOSER = {

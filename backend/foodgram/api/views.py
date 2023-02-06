@@ -70,8 +70,8 @@ class RecipeVievSet(viewsets.ModelViewSet):
 
         response = HttpResponse(make_send_file(ingredient).getvalue(),
                                 content_type='text/plain')
-        response['Content-Disposition'] = (f'attachment;'
-                                           f'filename=shop_list_file')
+        response['Content-Disposition'] = ('attachment;'
+                                           'filename=shop_list_file')
 
         return response
 
