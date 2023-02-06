@@ -106,6 +106,7 @@ class RecipeVievSet(viewsets.ModelViewSet):
         detail=True,
         methods=['post', 'delete'],
         permission_classes=[IsAuthenticated],
+        pagination_class=None,
         name='shopping_cart'
     )
     def shopping_cart(self, request, pk=None):
