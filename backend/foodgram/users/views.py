@@ -6,7 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.permissions import IsOwnerOnly
-from recipes.models import Recipe
 from users.models import Follow, User
 from users.serializers import (SetPasswordSerializer, UserSerializer,
                                UsersSerializer, UserSubscribtionsSerializer)
@@ -111,15 +110,15 @@ class UserSubscribtionsViewSet(viewsets.ModelViewSet):
     serializer_class = UserSubscribtionsSerializer
 
     def list(self, request):
+        recipes_limit = int(request.GET.get('recipes_limit'))
         user = request.user
         authors = Follow.objects.select_related('author').filter(user=user)
-        recipes = Recipe.objects.filter(author__in=authors.values('author_id'))
         queryset = User.objects.filter(pk__in=authors.values('author_id'))
         page = self.paginate_queryset(queryset)
         serializer = UserSubscribtionsSerializer(page, many=True, context={
-            'recipes': recipes,
             'queryset': queryset,
-            'user': user
+            'user': user,
+            'recipes_limit': recipes_limit
         }
         )
         return self.get_paginated_response(serializer.data)

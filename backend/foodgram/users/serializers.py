@@ -4,8 +4,6 @@ from rest_framework import serializers
 from api.serializers import ShopingCardSerializer
 from recipes.models import Recipe
 from users.models import Follow, User
-from foodgram.settings import PAGE_SIZE
-
 
 class UserSerializer(serializers.ModelSerializer):
     """ Сериализаторор для модели User."""
@@ -130,7 +128,8 @@ class UserSubscribtionsSerializer(serializers.ModelSerializer):
         ]
 
     def get_recipes(self, obj):
-        recipes = Recipe.objects.filter(author_id=obj.id)[:PAGE_SIZE]
+        recipes_limit = self.context['recipes_limit']
+        recipes = Recipe.objects.filter(author_id=obj.id)[:recipes_limit]
         serializer = ShopingCardSerializer(recipes, many=True)
         return serializer.data
 

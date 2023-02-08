@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import mixins
+from rest_framework.pagination import PageNumberPagination
 
 from api.filters import Filter, NameSearchFilter
 from api.permissions import IsAuthorOrReadOnly
@@ -38,12 +39,17 @@ class IngredientVievSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
+class RecipesLimitPagination(PageNumberPagination):
+    page_size_query_param = 'limit'
+
+
 class RecipeVievSet(viewsets.ModelViewSet):
     """ Представление модели Recipe """
     queryset = Recipe.objects.all()
     permission_classes = (IsAuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = Filter
+    pagination_class = RecipesLimitPagination
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
