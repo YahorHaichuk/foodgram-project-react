@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.permissions import IsOwnerOnly
+from foodgram.settings import DEFAULT_RECIPE_LIMIT
 from users.models import Follow, User
 from users.serializers import (SetPasswordSerializer, UserSerializer,
                                UsersSerializer, UserSubscribtionsSerializer)
@@ -77,7 +78,10 @@ class UserVievSet(
         author = get_object_or_404(User, pk=pk)
 
         if request.method == 'POST' and user != author:
-            recipes_limit = request.POST.get('recipes_limit')
+            recipes_limit = int(request.POST.get(
+                'recipes_limit', DEFAULT_RECIPE_LIMIT
+            ))
+
             Follow.objects.get_or_create(user=user, author=author)
             serializer = UserSubscribtionsSerializer(
                 author,
@@ -114,7 +118,9 @@ class UserSubscribtionsViewSet(viewsets.ModelViewSet):
     serializer_class = UserSubscribtionsSerializer
 
     def list(self, request):
-        recipes_limit = int(request.GET.get('recipes_limit'))
+        recipes_limit = int(request.GET.get(
+            'recipes_limit', DEFAULT_RECIPE_LIMIT
+        ))
         user = request.user
         authors = Follow.objects.select_related('author').filter(user=user)
         queryset = User.objects.filter(pk__in=authors.values('author_id'))

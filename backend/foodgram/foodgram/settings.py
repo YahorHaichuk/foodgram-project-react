@@ -8,7 +8,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = os.getenv("SECRET_KEY", default=' ')
 
-DEBUG = True
+DEBUG = os.getenv("DEBUG_MODE", default=False)
 
 ALLOWED_HOSTS = ["*"]
 
@@ -118,6 +118,7 @@ TAG_CHOICES = [
 AUTH_USER_MODEL = 'users.User'
 PAG = 'rest_framework.pagination.PageNumberPagination'
 PAGE_SIZE = 6
+DEFAULT_RECIPE_LIMIT = 3
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
