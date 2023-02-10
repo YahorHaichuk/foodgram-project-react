@@ -75,7 +75,9 @@ class UserVievSet(
 
         user = request.user
         author = get_object_or_404(User, pk=pk)
+
         if request.method == 'POST' and user != author:
+            recipes_limit = request.POST.get('recipes_limit')
             Follow.objects.get_or_create(user=user, author=author)
             serializer = UserSubscribtionsSerializer(
                 author,
@@ -83,7 +85,9 @@ class UserVievSet(
                 partial=True,
                 context={
                     'author': author,
-                    'user': user
+                    'user': user,
+                    'recipes_limit': recipes_limit
+
                 }
             )
             if serializer.is_valid(raise_exception=True):
