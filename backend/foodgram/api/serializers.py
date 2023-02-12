@@ -10,6 +10,33 @@ from recipes.models import (Favorite, IngredientAmount, Ingredients, Recipe,
 from users.models import User
 
 
+class UsersSerializer(serializers.ModelSerializer):
+    """ Сериализатор модели Users List и Create. """
+
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+        ]
+
+    def get_is_subscribed(self, obj):
+
+        if not self.context.get('request') or (
+                self.context.get('request') is None):
+            return False
+        request = self.context.get('request')
+        user = request.user
+        subcribe = user.follower.filter(author=obj)
+        return subcribe.exists()
+
+
 class UserSerializer(serializers.ModelSerializer):
     """ Сериализаторор для модели User."""
     password = serializers.CharField(
@@ -87,7 +114,7 @@ class IngredientsSerializer(serializers.ModelSerializer):
 class RecipeSerialzer(serializers.ModelSerializer):
 
     tags = TagsSerializer(many=True)
-    author = UserSerializer(read_only=True)
+    author = UsersSerializer(read_only=True)
     ingredients = serializers.SerializerMethodField()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -104,7 +131,7 @@ class RecipeSerialzer(serializers.ModelSerializer):
             'name',
             'image',
             'text',
-            'cooking_time'
+            'cooking_time',
         ]
 
     def get_ingredients(self, obj):
@@ -135,6 +162,7 @@ class AmountSerializer(serializers.ModelSerializer):
     class Meta:
         model = IngredientAmount
         fields = ('id', 'amount',)
+
 
 class CreateRecipeSerialzer(serializers.ModelSerializer):
 

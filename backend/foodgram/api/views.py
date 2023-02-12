@@ -4,10 +4,10 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import mixins
-from rest_framework.pagination import PageNumberPagination
 
 from api.filters import Filter, NameSearchFilter
 from api.permissions import IsAuthorOrReadOnly

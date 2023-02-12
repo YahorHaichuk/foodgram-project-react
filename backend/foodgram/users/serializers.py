@@ -5,6 +5,7 @@ from api.serializers import ShopingCardSerializer
 from recipes.models import Recipe
 from users.models import Follow, User
 
+
 class UserSerializer(serializers.ModelSerializer):
     """ Сериализаторор для модели User."""
 
